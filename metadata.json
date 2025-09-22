@@ -1,0 +1,5 @@
+{
+  "name": "NexaNotes",
+  "description": "A futuristic, Ubuntu-inspired notetaking platform where you can intelligently summarize and share your notes using the power of Gemini.",
+  "requestFramePermissions": []
+}
