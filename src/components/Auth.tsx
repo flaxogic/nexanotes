@@ -1,91 +1,126 @@
-
 import React, { useState } from 'react';
-import { useTranslation } from '../App.tsx';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  User
+} from "firebase/auth";
+import { auth } from '../firebase'; // Import our configured auth service
 
+// Keep the existing User type for component props
+type LocalUser = {
+  id: string;
+  username: string;
+  email: string;
+  avatarUrl?: string;
+  role: 'user' | 'admin' | 'dev';
+  bio?: string;
+};
+
+// Props for the Auth component
 interface AuthProps {
-  onAuth: (email: string) => Promise<string | null>;
-  appName: string;
-  registrationEnabled: boolean;
+  onAuthSuccess: (user: LocalUser) => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ onAuth, appName, registrationEnabled }) => {
-  const { t } = useTranslation();
+const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [username, setUsername] = useState(''); // Only for signup
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      if (isSignUp && !registrationEnabled) {
-        setError(t('auth.registrationDisabled'));
+    setError(null); // Reset error before trying
+
+    if (isLogin) {
+      // --- LOGIN LOGIC ---
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        
+        console.log("User logged in successfully:", firebaseUser);
+
+        // NOTE: We will handle redirecting and managing the user session globally
+        // in a later step. For now, this is a placeholder.
+        const mockLocalUser: LocalUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          username: firebaseUser.displayName || 'User',
+          role: 'user', // We will handle roles later
+        };
+        onAuthSuccess(mockLocalUser);
+
+      } catch (err: any) {
+        console.error("Login Error:", err);
+        setError(err.message); // Display Firebase error message
+      }
+    } else {
+      // --- SIGNUP LOGIC ---
+      if (!username) {
+        setError("Please enter a username.");
         return;
       }
-      setLoading(true);
-      setError(null);
-      const authError = await onAuth(email);
-      if (authError) {
-        setError(authError);
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        
+        console.log("User signed up successfully:", firebaseUser);
+        
+        // After signup, you might want to automatically log them in
+        // or ask them to verify their email. For now, we'll treat it as a success.
+        const mockLocalUser: LocalUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          username: username, // Use the username from the form
+          role: 'user',
+        };
+        onAuthSuccess(mockLocalUser);
+
+      } catch (err: any) {
+        console.error("Signup Error:", err);
+        setError(err.message);
       }
-      setLoading(false);
     }
   };
-
-  const currentModeIsSignUp = isSignUp && registrationEnabled;
 
   return (
     <div className="auth-container">
       <div className="auth-form-wrapper">
         <div className="auth-header">
-          <h1>{appName}</h1>
-          <p>{currentModeIsSignUp ? t('auth.createAccountTitle') : t('auth.welcomeBackTitle')}</p>
+          <h1>{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
+          <p>{isLogin ? 'Log in to continue your work' : 'Get started with NexaNotes'}</p>
         </div>
-        <form onSubmit={handleSubmit}>
-          {error && <p className="input-error-message" style={{textAlign: 'center', marginBottom: '1rem'}}>{error}</p>}
+        <form onSubmit={handleAuthAction}>
+          {error && <p style={{ color: '#ff6b6b' }}>{error}</p>}
+          
+          {!isLogin && (
+            <div className="input-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required={!isLogin}
+              />
+            </div>
+          )}
+
           <div className="input-group">
-            <label htmlFor="email">{t('auth.emailLabel')}</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
               required
-              aria-label={t('auth.emailLabel')}
             />
           </div>
+
           <div className="input-group">
-            <label htmlFor="password">{t('auth.passwordLabel')}</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={8}
-              aria-label={t('auth.passwordLabel')}
-            />
-          </div>
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('auth.authenticating') : (currentModeIsSignUp ? t('auth.createAccountButton') : t('auth.loginButton'))}
-          </button>
-        </form>
-        {registrationEnabled && (
-          <div className="auth-footer">
-            <p>
-              {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.dontHaveAccount')}
-              <button onClick={() => setIsSignUp(!isSignUp)} className="toggle-auth-mode" aria-label={isSignUp ? t('auth.logIn') : t('auth.signUp')}>
-                {isSignUp ? t('auth.logIn') : t('auth.signUp')}
-              </button>
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Auth;
+        
