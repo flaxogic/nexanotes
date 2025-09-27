@@ -1,36 +1,26 @@
 import React, { useState } from 'react';
 import { 
   createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
-  User
+  signInWithEmailAndPassword 
 } from "firebase/auth";
-import { auth } from '../firebase'; // Import our configured auth service
+import { auth } from '../firebase';
+import { User } from '../types'; // <-- CORRECT: Import the official User type
 
-// Keep the existing User type for component props
-type LocalUser = {
-  id: string;
-  username: string;
-  email: string;
-  avatarUrl?: string;
-  role: 'user' | 'admin' | 'dev';
-  bio?: string;
-};
-
-// Props for the Auth component
+// Props for the Auth component now use the official User type
 interface AuthProps {
-  onAuthSuccess: (user: LocalUser) => void;
+  onAuthSuccess: (user: User) => void;
 }
 
 const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState(''); // Only for signup
+  const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Reset error before trying
+    setError(null);
 
     if (isLogin) {
       // --- LOGIN LOGIC ---
@@ -38,21 +28,17 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const firebaseUser = userCredential.user;
         
-        console.log("User logged in successfully:", firebaseUser);
-
-        // NOTE: We will handle redirecting and managing the user session globally
-        // in a later step. For now, this is a placeholder.
-        const mockLocalUser: LocalUser = {
+        // Create a user object that matches the official User type
+        const appUser: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
-          username: firebaseUser.displayName || 'User',
+          username: firebaseUser.displayName || 'User', // Note: displayName is often null initially
           role: 'user', // We will handle roles later
         };
-        onAuthSuccess(mockLocalUser);
+        onAuthSuccess(appUser);
 
       } catch (err: any) {
-        console.error("Login Error:", err);
-        setError(err.message); // Display Firebase error message
+        setError(err.message);
       }
     } else {
       // --- SIGNUP LOGIC ---
@@ -64,20 +50,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const firebaseUser = userCredential.user;
         
-        console.log("User signed up successfully:", firebaseUser);
-        
-        // After signup, you might want to automatically log them in
-        // or ask them to verify their email. For now, we'll treat it as a success.
-        const mockLocalUser: LocalUser = {
+        // Create a user object that matches the official User type
+        const appUser: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
           username: username, // Use the username from the form
           role: 'user',
         };
-        onAuthSuccess(mockLocalUser);
+        onAuthSuccess(appUser);
 
       } catch (err: any) {
-        console.error("Signup Error:", err);
         setError(err.message);
       }
     }
@@ -123,4 +105,24 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               type="password"
               id="password"
               value={password}
-        
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="auth-button">
+            {isLogin ? 'Log In' : 'Sign Up'}
+          </button>
+        </form>
+        <div className="auth-footer">
+          {isLogin ? "Don't have an account?" : "Already have an account?"}
+          <button onClick={() => setIsLogin(!isLogin)} className="toggle-auth-mode">
+            {isLogin ? 'Sign Up' : 'Log In'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
