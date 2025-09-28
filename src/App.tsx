@@ -22,17 +22,6 @@ const App: React.FC = () => {
     const [activeView, setActiveView] = useState('notes');
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    // This useEffect is no longer needed to load from localStorage.
-    // We will replace this with Firebase's auth state listener in a future step.
-    /*
-    useEffect(() => {
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-            setCurrentUser(JSON.parse(savedUser));
-        }
-    }, []);
-    */
-
     useEffect(() => {
         document.documentElement.className = '';
         document.documentElement.classList.add(themes[theme].className);
@@ -44,15 +33,13 @@ const App: React.FC = () => {
 
     const activeNote = notes.find(note => note.id === activeNoteId);
 
-    // THIS IS THE UPDATED FUNCTION
     const handleAuthSuccess = (userFromAuth: User) => {
-        console.log("Authentication successful! User data:", userFromAuth);
+        console.log("Authentication successful, user:", userFromAuth);
         setCurrentUser(userFromAuth);
     };
 
     const handleLogout = () => {
         setCurrentUser(null);
-        // We will add Firebase logout logic here later
     };
 
     if (!currentUser) {
@@ -70,7 +57,6 @@ const App: React.FC = () => {
                     activeView={activeView}
                 />
                 <main className="app-container">
-                    {/* Render content based on activeView */}
                     {activeView === 'notes' && (
                         <div className="content-area">
                             <NoteList notes={notes} onNoteSelect={handleNoteSelect} activeNoteId={activeNoteId} />
@@ -94,4 +80,8 @@ const App: React.FC = () => {
     );
 };
 
-export default App;
+export default App;```
+
+5.  **Commit the changes.**
+
+This two-file update creates complete consistency across your application for how a "User" is defined. This directly fixes the error that caused the build to fail. Please commit these changes, and let's check the build in the "Actions" tab one more time.
