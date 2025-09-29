@@ -80,8 +80,4 @@ const App: React.FC = () => {
     );
 };
 
-export default App;```
-
-5.  **Commit the changes.**
-
-This two-file update creates complete consistency across your application for how a "User" is defined. This directly fixes the error that caused the build to fail. Please commit these changes, and let's check the build in the "Actions" tab one more time.
+export default App;
